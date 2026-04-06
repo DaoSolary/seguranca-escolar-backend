@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PerfilUsuario {
+  ALUNO
+  PROFESSOR
+  SEGURANCA
+  POLICIA
+  ADMIN
+}
+
+enum TipoAlerta {
+  VIOLENCIA
+  ASSEDIO
+  EMERGENCIA_MEDICA
+  INCENDIO
+  INTRUSAO
+  DROGA
+  OUTROS
+}
+
+enum StatusAlerta {
+  PENDENTE
+  EM_ANDAMENTO
+  RESOLVIDO
+  CANCELADO
+}
+
+enum PrioridadeAlerta {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+model Usuario {
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  senha                 String
+  nome                  String
+  telefone              String?
+  perfil                PerfilUsuario
+  instituicaoId         Int?
+  ativo                 Boolean   @default(true)
+  fcmToken              String? // Token para notificações push
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  instituicao           Instituicao? @relation(fields: [instituicaoId], references: [id], onDelete: SetNull)
+  alertasEnviados       Alerta[]      @relation("AlertaEnviadoPor")
+  alertasAtribuidos     Alerta[]      @relation("AlertaAtribuidoPara")
+  mensagensEnviadas     Mensagem[]    @relation("MensagemEnviadaPor")
+  notificacoesRecebidas Notificacao[] @relation("NotificacoesRecebidas")
+
+  @@map("usuarios")
+}
+
+model Instituicao {
+  id          Int       @id @default(autoincrement())
+  nome        String
+  cnpj        String?   @unique
+  endereco    String
+  telefone    String?
+  email       String?
+  ativo       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  usuarios    Usuario[]
+  alertas     Alerta[]
+
+  @@map("instituicoes")
+}
+
+model Alerta {
+  id              Int             @id @default(autoincrement())
+  tipo            TipoAlerta
+  titulo          String
+  descricao       String
+  status          StatusAlerta    @default(PENDENTE)
+  prioridade      PrioridadeAlerta @default(MEDIA)
+  
+  // Localização
+  latitude        Float?
+  longitude       Float?
+  endereco        String?
+
+  // Relacionamentos
+  instituicaoId   Int
+  enviadoPorId    Int
+  atribuidoParaId Int? // Segurança ou Polícia responsável
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  resolvidoEm     DateTime?
+  
+  // Evidências (fotos/vídeos)
+  evidencias      Evidencia[]
+  
+  // Mensagens/Chat
+  mensagens       Mensagem[]
+  
+  // Notificações
+  notificacoes    Notificacao[]
+
+  instituicao     Instituicao     @relation(fields: [instituicaoId], references: [id])
+  enviadoPor      Usuario         @relation("AlertaEnviadoPor", fields: [enviadoPorId], references: [id])
+  atribuidoPara   Usuario?        @relation("AlertaAtribuidoPara", fields: [atribuidoParaId], references: [id], onDelete: SetNull)
+
+  @@map("alertas")
+}
+
+model Evidencia {
+  id              Int       @id @default(autoincrement())
+  alertaId        Int
+  tipo            String    // "foto" | "video"
+  url             String    // URL do arquivo no storage
+  nomeArquivo     String
+  tamanho         Int?      // Tamanho em bytes
+  descricao       String?
+  createdAt       DateTime  @default(now())
+
+  alerta          Alerta    @relation(fields: [alertaId], references: [id], onDelete: Cascade)
+
+  @@map("evidencias")
+}
+
+model Mensagem {
+  id              Int       @id @default(autoincrement())
+  alertaId        Int
+  enviadoPorId    Int
+  conteudo        String
+  anexoUrl        String?
+  lida            Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  alerta          Alerta    @relation(fields: [alertaId], references: [id], onDelete: Cascade)
+  enviadoPor      Usuario   @relation("MensagemEnviadaPor", fields: [enviadoPorId], references: [id])
+
+  @@map("mensagens")
+}
+
+model Notificacao {
+  id              Int       @id @default(autoincrement())
+  usuarioId       Int
+  alertaId        Int?
+  titulo          String
+  mensagem        String
+  tipo            String    // "alerta", "mensagem", "sistema"
+  lida            Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  lidaEm          DateTime?
+
+  usuario         Usuario   @relation("NotificacoesRecebidas", fields: [usuarioId], references: [id], onDelete: Cascade)
+  alerta          Alerta?   @relation(fields: [alertaId], references: [id], onDelete: SetNull)
+
+  @@map("notificacoes")
+}
+
