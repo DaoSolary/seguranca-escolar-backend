@@ -22,10 +22,13 @@ const app = express();
 const httpServer = createServer(app);
 
 // 🌍 CORS dinâmico (IMPORTANTE para produção)
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173'
-].filter(Boolean);
+const allowedOrigins: (string | RegExp)[] = [];
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+allowedOrigins.push('http://localhost:5173');
 
 // 🔌 Socket.IO configurado para produção
 const io = new Server(httpServer, {
@@ -114,7 +117,7 @@ app.get('/api/test', (req, res) => {
 });
 
 // 🚀 Start server
-httpServer.listen(PORT, '0.0.0.0', () => {
+httpServer.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
