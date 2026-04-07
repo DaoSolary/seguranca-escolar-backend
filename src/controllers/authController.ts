@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 import { AuthRequest } from '../middleware/auth';
 
+// 🔐 LOGIN
 export const login = async (req: AuthRequest, res: Response) => {
   try {
     const { email, senha, fcmToken } = req.body;
@@ -34,7 +35,7 @@ export const login = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Credenciais inválidas' });
     }
 
-    // Atualizar FCM token se fornecido
+    // 🔔 Atualizar FCM token
     if (fcmToken) {
       await prisma.usuario.update({
         where: { id: usuario.id },
@@ -42,20 +43,27 @@ export const login = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // 🔑 Verificar JWT secret
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      throw new Error('JWT_SECRET não definido');
+    }
+
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email },
-      process.env.JWT_SECRET || 'secret',
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
+    // 🍪 COOKIE CORRIGIDO (CRÍTICO)
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+      secure: true, // obrigatório em produção (HTTPS)
+      sameSite: 'none', // 🔥 ESSENCIAL para Netlify ↔ Render
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
+    return res.json({
       user: {
         id: usuario.id,
         email: usuario.email,
@@ -67,25 +75,28 @@ export const login = async (req: AuthRequest, res: Response) => {
       token,
     });
   } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ message: 'Erro interno do servidor' });
+    console.error('❌ Erro no login:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
 
+// 🚪 LOGOUT
 export const logout = async (req: AuthRequest, res: Response) => {
   try {
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
-    res.json({ message: 'Logout realizado com sucesso' });
+    return res.json({ message: 'Logout realizado com sucesso' });
   } catch (error) {
-    res.status(500).json({ message: 'Erro interno do servidor' });
+    console.error('Erro no logout:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
 
+// 👤 PROFILE
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -109,7 +120,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Usuário não encontrado' });
     }
 
-    res.json({
+    return res.json({
       id: usuario.id,
       email: usuario.email,
       nome: usuario.nome,
@@ -119,8 +130,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       instituicao: usuario.instituicao,
     });
   } catch (error) {
-    console.error('Erro ao buscar perfil:', error);
-    res.status(500).json({ message: 'Erro interno do servidor' });
+    console.error('❌ Erro ao buscar perfil:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
-
