@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 import { login, logout, getProfile } from '../controllers/authController';
 import { authenticateToken } from '../middleware/auth';
@@ -20,7 +20,7 @@ router.post(
       .isLength({ min: 4 })
       .withMessage('Senha deve ter pelo menos 4 caracteres'),
   ],
-  (req, res, next) => {
+  (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -30,7 +30,8 @@ router.post(
       });
     }
 
-    return login(req, res, next);
+    // ✅ CORREÇÃO AQUI (sem next)
+    return login(req as any, res);
   }
 );
 
