@@ -108,7 +108,7 @@ setIO(io);
 app.use('/api/auth', authRoutes);
 app.use('/api/alertas', alertaRoutes);
 app.use('/api/instituicoes', instituicaoRoutes);
-app.use('/api/usuarios', usuarioRoutes);
+app.use('/usuarios', usuarioRoutes);
 app.use('/api/mensagens', mensagemRoutes);
 app.use('/api/notificacoes', notificacaoRoutes);
 
