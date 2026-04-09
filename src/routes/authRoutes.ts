@@ -7,7 +7,7 @@ const router = Router();
 
 // 🔐 LOGIN
 router.post(
-  '/login',
+  '/auth/login',
   [
     body('email')
       .isEmail()
