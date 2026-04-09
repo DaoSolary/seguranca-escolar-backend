@@ -105,12 +105,12 @@ app.set('io', io);
 setIO(io);
 
 // 📌 Rotas
-app.use('/api/auth', authRoutes);
-app.use('/api/alertas', alertaRoutes);
-app.use('/api/instituicoes', instituicaoRoutes);
+app.use('/auth', authRoutes);
+app.use('/alertas', alertaRoutes);
+app.use('/instituicoes', instituicaoRoutes);
 app.use('/usuarios', usuarioRoutes);
-app.use('/api/mensagens', mensagemRoutes);
-app.use('/api/notificacoes', notificacaoRoutes);
+app.use('/mensagens', mensagemRoutes);
+app.use('/notificacoes', notificacaoRoutes);
 
 // ❤️ Health check
 app.get('/api/health', (req, res) => {
@@ -118,7 +118,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // 🧪 Teste
-app.get('/api/test', (req, res) => {
+app.get('/test', (req, res) => {
   res.json({
     message: 'Backend está funcionando!',
     timestamp: new Date().toISOString(),
