@@ -102,11 +102,11 @@ setIO(io);
 
 // 📌 Rotas
 app.use('/api/auth', authRoutes);
-app.use('/api/alertas', alertaRoutes);
-app.use('/api/instituicoes', instituicaoRoutes);
-app.use('/api/usuarios', usuarioRoutes);
-app.use('/api/mensagens', mensagemRoutes);
-app.use('/api/notificacoes', notificacaoRoutes);
+app.use('/alertas', alertaRoutes);
+app.use('/instituicoes', instituicaoRoutes);
+app.use('/usuarios', usuarioRoutes);
+app.use('/mensagens', mensagemRoutes);
+app.use('/notificacoes', notificacaoRoutes);
 
 // ❤️ Health check
 app.get('/health', (req, res) => {
