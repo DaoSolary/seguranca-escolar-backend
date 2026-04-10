@@ -63,14 +63,10 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // 🔌 Socket.IO
+
 const io = new Server(httpServer, {
   cors: {
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Postman, testes
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      console.warn('❌ CORS Socket.IO bloqueado para:', origin);
-      return callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // 👈 ACEITA QUALQUER ORIGIN (DEV + MOBILE)
     credentials: true,
   },
   transports: ['websocket', 'polling'],
