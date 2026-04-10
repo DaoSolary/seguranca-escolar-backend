@@ -113,25 +113,19 @@ app.use('/mensagens', mensagemRoutes);
 app.use('/notificacoes', notificacaoRoutes);
 
 // ❤️ Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 🧪 Teste
-app.get('/test', (req, res) => {
-  res.json({
-    message: 'Backend está funcionando!',
-    timestamp: new Date().toISOString(),
-  });
-});
-
 // 🚀 Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 httpServer.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`🌐 Ambiente: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌍 Frontend permitido:`, allowedOrigins);
 });
 
 export { io };
