@@ -26,22 +26,43 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Não autenticado' });
     }
 
-    const { tipo, titulo, descricao, latitude, longitude, endereco, prioridade, evidencias } = req.body;
+    const {
+      tipo,
+      titulo,
+      descricao,
+      latitude,
+      longitude,
+      endereco,
+      prioridade,
+    } = req.body;
+
+    const files = req.files as Express.Multer.File[] | undefined;
 
     if (!tipo || !titulo || !descricao) {
-      return res.status(400).json({ message: 'Tipo, título e descrição são obrigatórios' });
+      return res.status(400).json({
+        message: 'Tipo, título e descrição são obrigatórios',
+      });
     }
 
-    // Determinar prioridade automática baseada no tipo
+    // 🔥 PRIORIDADE AUTOMÁTICA
     let prioridadeFinal = prioridade || 'MEDIA';
-    if (tipo === 'VIOLENCIA' || tipo === 'INCENDIO' || tipo === 'INTRUSAO') {
+
+    if (
+      tipo === 'VIOLENCIA' ||
+      tipo === 'INCENDIO' ||
+      tipo === 'INTRUSAO'
+    ) {
       prioridadeFinal = 'ALTA';
     }
-    if (tipo === 'EMERGENCIA_MEDICA' && descricao.toLowerCase().includes('urgente')) {
+
+    if (
+      tipo === 'EMERGENCIA_MEDICA' &&
+      descricao.toLowerCase().includes('urgente')
+    ) {
       prioridadeFinal = 'CRITICA';
     }
 
-    // Criar alerta sem evidências primeiro (evidências serão enviadas depois via upload)
+    // 🟢 1. CRIAR ALERTA PRIMEIRO
     const alerta = await prisma.alerta.create({
       data: {
         tipo,
@@ -51,50 +72,60 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
         longitude: longitude ? parseFloat(longitude.toString()) : null,
         endereco,
         prioridade: prioridadeFinal,
-        instituicaoId: req.user.instituicaoId || 1, // Usar ID 1 se não tiver instituição
+        instituicaoId: req.user.instituicaoId || 1,
         enviadoPorId: req.user.id,
-        // Evidências serão adicionadas depois via endpoint de upload
       },
       include: {
-        enviadoPor: {
-          select: {
-            id: true,
-            nome: true,
-            telefone: true,
-            perfil: true, // Incluir perfil do remetente
-          },
-        },
-        instituicao: {
-          select: {
-            id: true,
-            nome: true,
-          },
-        },
-        evidencias: true,
+        enviadoPor: true,
+        instituicao: true,
+        //evidencias: true,
       },
     });
 
-    // Notificar via Socket.IO para todos os clientes conectados
-    const io = getIO();
-    if (io) {
-      // Emitir para todos os clientes - cada cliente decide se deve mostrar
-      io.emit('novo-alerta', alerta);
-      console.log(`📢 Socket.IO: Emitido 'novo-alerta' para todos os clientes conectados (Alerta ID: ${alerta.id})`);
+    // 🟡 2. UPLOAD AUTOMÁTICO DE EVIDÊNCIAS (SE EXISTIREM)
+    if (files && files.length > 0) {
+      try {
+        const uploads = await uploadMultipleFiles(files, 'evidencias');
+
+        const evidencias = await Promise.all(
+          uploads.map((upload) =>
+            prisma.evidencia.create({
+              data: {
+                alertaId: alerta.id,
+                tipo: upload.tipo.startsWith('image/') ? 'foto' : 'video',
+                url: upload.url,
+                nomeArquivo: upload.nomeArquivo,
+                tamanho: upload.tamanho,
+              },
+            })
+          )
+        );
+
+        // atualizar alerta com evidências
+        (alerta as any).evidencias = evidencias;
+      } catch (uploadError) {
+        console.error('Erro no upload de evidências:', uploadError);
+      }
     }
 
-    // Enviar notificações push para TODOS os perfis quando ADMIN cria alerta
-    // Ou apenas para SEGURANCA, POLICIA, ADMIN quando outro perfil cria
-    const perfisParaNotificar = req.user?.perfil === 'ADMIN'
-      ? ['ADMIN', 'SEGURANCA', 'POLICIA', 'PROFESSOR', 'ALUNO'] as const
-      : ['SEGURANCA', 'POLICIA', 'ADMIN'] as const;
+    // 📡 SOCKET
+    const io = getIO();
+    if (io) {
+      io.emit('novo-alerta', alerta);
+    }
+
+    // 🔔 NOTIFICAÇÕES PUSH (mantido igual)
+    const perfisParaNotificar =
+      req.user?.perfil === 'ADMIN'
+        ? ['ADMIN', 'SEGURANCA', 'POLICIA', 'PROFESSOR', 'ALUNO'] as const
+        : ['SEGURANCA', 'POLICIA', 'ADMIN'] as const;
 
     const usuariosNotificar = await prisma.usuario.findMany({
       where: {
         OR: perfisParaNotificar.map((perfil) => ({ perfil })),
         fcmToken: { not: null },
         ativo: true,
-        // Não enviar para quem criou o alerta
-        id: { not: req.user?.id },
+        id: { not: req.user.id },
       },
       select: {
         fcmToken: true,
@@ -114,7 +145,6 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
       },
     };
 
-    // Enviar push notifications (se Firebase estiver configurado)
     if (admin.apps.length > 0) {
       for (const usuario of usuariosNotificar) {
         if (usuario.fcmToken) {
@@ -124,30 +154,25 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
               token: usuario.fcmToken,
             });
           } catch (error) {
-            console.error(`Erro ao enviar push para ${usuario.perfil}:`, error);
+            console.error('Erro push:', error);
           }
         }
       }
-    } else {
-      console.log('Firebase não configurado - notificações push desabilitadas');
     }
 
-    // Criar notificações no banco (mesmos perfis que recebem push)
+    // 🧾 NOTIFICAÇÕES BD (igual)
     const usuariosParaNotificar = await prisma.usuario.findMany({
       where: {
         OR: perfisParaNotificar.map((perfil) => ({ perfil })),
         ativo: true,
-        // Não criar notificação para quem criou o alerta
-        id: { not: req.user?.id },
+        id: { not: req.user.id },
       },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
 
     if (usuariosParaNotificar.length > 0) {
       await prisma.notificacao.createMany({
-        data: usuariosParaNotificar.map(u => ({
+        data: usuariosParaNotificar.map((u) => ({
           usuarioId: u.id,
           alertaId: alerta.id,
           titulo: `Novo Alerta: ${titulo}`,
@@ -157,10 +182,10 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.status(201).json(alerta);
+    return res.status(201).json(alerta);
   } catch (error) {
     console.error('Erro ao criar alerta:', error);
-    res.status(500).json({ message: 'Erro interno do servidor' });
+    return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 };
 

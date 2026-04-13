@@ -1,6 +1,6 @@
 import { Router } from 'express';
+import upload from '../middlewares/upload';
 import { body, query } from 'express-validator';
-import multer from 'multer';
 import path from 'path';
 import {
   criarAlerta,
@@ -12,38 +12,13 @@ import {
 } from '../controllers/alertaController';
 import { authenticateToken, requireAnyRole } from '../middleware/auth';
 
-// Configurar multer para upload de arquivos
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Apenas imagens e vídeos são permitidos'));
-    }
-  },
-});
+
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.post(
-  '/',
-  [
-    body('tipo').isIn(['VIOLENCIA', 'ASSEDIO', 'EMERGENCIA_MEDICA', 'INCENDIO', 'INTRUSAO', 'DROGA', 'OUTROS']),
-    body('titulo').notEmpty().withMessage('Título é obrigatório'),
-    body('descricao').notEmpty().withMessage('Descrição é obrigatória'),
-  ],
-  criarAlerta
-);
+router.post('/', upload.array('evidencias', 10), criarAlerta);
 
 // Rota para upload de evidências
 router.post(
