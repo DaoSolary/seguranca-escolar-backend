@@ -102,7 +102,7 @@ setIO(io);
 
 // 📌 Rotas
 app.use('/api/auth', authRoutes);
-app.use('/alertas', alertaRoutes);
+app.use('/api/alertas', alertaRoutes);
 app.use('/instituicoes', instituicaoRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/mensagens', mensagemRoutes);
