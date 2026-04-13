@@ -107,6 +107,7 @@ app.use('/instituicoes', instituicaoRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/mensagens', mensagemRoutes);
 app.use('/notificacoes', notificacaoRoutes);
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 // ❤️ Health check
 app.get('/health', (req, res) => {
