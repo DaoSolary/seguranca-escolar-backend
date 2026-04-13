@@ -7,6 +7,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setIO } from './controllers/alertaController';
 import path from 'path';
+import fs from 'fs';
+
 
 // Routes
 import authRoutes from './routes/authRoutes';
@@ -20,6 +22,12 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+const uploadPath = path.join(process.cwd(), 'uploads');
+
+console.log('UPLOAD DIR EXISTS:', fs.existsSync(uploadPath));
+console.log('UPLOAD DIR:', uploadPath);
+console.log('UPLOAD PATH:', path.join(process.cwd(), 'uploads'));
 
 // 🌍 Lista de origens permitidas
 const allowedOrigins: string[] = [];
