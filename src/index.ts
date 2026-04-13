@@ -9,7 +9,6 @@ import { setIO } from './controllers/alertaController';
 import path from 'path';
 import fs from 'fs';
 
-
 // Routes
 import authRoutes from './routes/authRoutes';
 import alertaRoutes from './routes/alertaRoutes';
@@ -23,11 +22,10 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-const uploadPath = path.join(process.cwd(), 'uploads');
-
+// Correção para o caminho de uploads
+const uploadPath = path.join(__dirname, '../uploads'); // Usa __dirname para garantir caminho correto
 console.log('UPLOAD DIR EXISTS:', fs.existsSync(uploadPath));
 console.log('UPLOAD DIR:', uploadPath);
-console.log('UPLOAD PATH:', path.join(process.cwd(), 'uploads'));
 
 // 🌍 Lista de origens permitidas
 const allowedOrigins: string[] = [];
@@ -68,10 +66,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 // 📁 Uploads (⚠️ temporário no Render)
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Usar o caminho corrigido
+app.use('/uploads', express.static(uploadPath));
 
 // 🔌 Socket.IO
-
 const io = new Server(httpServer, {
   cors: {
     origin: true, // 👈 ACEITA QUALQUER ORIGIN (DEV + MOBILE)
@@ -115,7 +113,6 @@ app.use('/instituicoes', instituicaoRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/mensagens', mensagemRoutes);
 app.use('/notificacoes', notificacaoRoutes);
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 
 // ❤️ Health check
 app.get('/health', (req, res) => {
