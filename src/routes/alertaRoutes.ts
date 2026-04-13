@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import upload from '../middlewares/upload';
+import upload from '../middlware/upload';
 import { body, query } from 'express-validator';
 import path from 'path';
 import {
