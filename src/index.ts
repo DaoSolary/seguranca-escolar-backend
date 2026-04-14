@@ -45,15 +45,23 @@ allowedOrigins.push('http://localhost:5173');
 // 🔐 Função CORS dinâmica (resolve problema de cookies)
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    // Permitir requests sem origin (ex: Postman)
+    console.log('🌍 Origin recebida:', origin);
+
+    // Permitir requests sem origin (Postman, mobile, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'https://alerta-publico.vercel.app',
+    ];
+
+    if (allowed.includes(origin)) {
+      return callback(new Error('Not allowed by CORS'));
     }
 
     console.warn('❌ CORS bloqueado para:', origin);
-    return callback(new Error('Not allowed by CORS'));
+    return callback(null, false); // ⚠️ NÃO lançar erro
   },
   credentials: true,
 };
@@ -112,7 +120,7 @@ app.set('io', io);
 setIO(io);
 
 // 📌 Rotas
-app.use('/', authRoutes);
+app.use('/auth', authRoutes);
 app.use('/alertas', alertaRoutes);
 app.use('/instituicoes', instituicaoRoutes);
 app.use('/usuarios', usuarioRoutes);
