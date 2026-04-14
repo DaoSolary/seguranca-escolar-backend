@@ -87,7 +87,7 @@ export async function uploadToFirebase(
 
     return {
       url,
-      nomeArquivo: file.originalname,
+      nomeArquivo: fileName,
       tamanho: file.size,
       tipo: file.mimetype,
     };
@@ -114,7 +114,7 @@ async function uploadLocal(
 
   const fileName = `${Date.now()}-${file.originalname}`;
   const filePath = path.join(uploadDir, fileName);
-
+  console.log('📁 Salvando arquivo em:', filePath);
   // Salvar arquivo
   fs.writeFileSync(filePath, file.buffer);
 
@@ -123,7 +123,7 @@ async function uploadLocal(
 
   return {
     url,
-    nomeArquivo: file.originalname,
+    nomeArquivo: fileName,
     tamanho: file.size,
     tipo: file.mimetype,
   };

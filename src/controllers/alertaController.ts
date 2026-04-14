@@ -595,9 +595,13 @@ export const uploadEvidencias = async (req: AuthRequest, res: Response) => {
       message: 'Evidências enviadas com sucesso',
       evidencias,
     });
-  } catch (error) {
-    console.error('Erro ao fazer upload de evidências:', error);
-    res.status(500).json({ message: 'Erro interno do servidor' });
-  }
+  } catch (error: any) {
+  console.error('❌ ERRO DETALHADO UPLOAD:', error);
+  console.error('❌ STACK:', error?.stack);
+
+  res.status(500).json({
+    message: error?.message || 'Erro interno do servidor',
+  });
+}
 };
 
