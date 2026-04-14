@@ -23,9 +23,14 @@ const app = express();
 const httpServer = createServer(app);
 
 // Correção para o caminho de uploads
-const uploadPath = path.join(__dirname, '../uploads'); // Usa __dirname para garantir caminho correto
+const uploadPath = path.resolve(process.cwd(), 'uploads'); // Usa __dirname para garantir caminho correto
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+  console.log('📁 Pasta uploads criada automaticamente');
+}
 console.log('UPLOAD DIR EXISTS:', fs.existsSync(uploadPath));
 console.log('UPLOAD DIR:', uploadPath);
+console.log('UPLOAD DIR EXISTS:', fs.existsSync(uploadPath)); // Confirma se a pasta existe no ambiente de produção
 
 // 🌍 Lista de origens permitidas
 const allowedOrigins: string[] = [];

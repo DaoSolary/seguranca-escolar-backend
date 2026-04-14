@@ -1,13 +1,14 @@
 import multer from 'multer';
+import path from 'path';
 
-// 🔥 IMPORTANTE: usar memória (para Firebase funcionar)
-const storage = multer.memoryStorage();
-
-const upload = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.resolve(process.cwd(), 'uploads/evidencias'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + '-' + file.originalname;
+    cb(null, uniqueName);
   },
 });
 
-export default upload;
+export const upload = multer({ storage });

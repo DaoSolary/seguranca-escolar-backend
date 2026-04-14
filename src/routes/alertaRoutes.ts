@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import upload from '../middleware/upload';
+import { upload } from '../middleware/upload'; // ✅ CORRETO (named import)
 import { body, query } from 'express-validator';
-import path from 'path';
+
 import {
   criarAlerta,
   listarAlertas,
@@ -10,24 +10,30 @@ import {
   getEstatisticas,
   uploadEvidencias,
 } from '../controllers/alertaController';
+
 import { authenticateToken, requireAnyRole } from '../middleware/auth';
-
-
 
 const router = Router();
 
+// 🔐 Middleware global
 router.use(authenticateToken);
 
-router.post('/', upload.array('evidencias', 10), criarAlerta);
+// ✅ CRIAR ALERTA COM EVIDÊNCIAS
+// 👉 ENTRE router.use(authenticateToken); E router.get(...)
+router.post(
+  '/',
+  upload.array('files', 10), // 🔥 PADRÃO DEFINIDO AQUI
+  criarAlerta
+);
 
-// Rota para upload de evidências
+// ✅ UPLOAD DE EVIDÊNCIAS EM ALERTA EXISTENTE
 router.post(
   '/:id/evidencias',
-  authenticateToken, // Garantir autenticação
-  upload.array('arquivos', 10), // Até 10 arquivos
+  upload.array('files', 10), // 🔥 MESMO NOME
   uploadEvidencias
 );
 
+// 📋 LISTAR ALERTAS
 router.get(
   '/',
   [
@@ -39,10 +45,13 @@ router.get(
   listarAlertas
 );
 
+// 📊 ESTATÍSTICAS
 router.get('/estatisticas', getEstatisticas);
 
+// 🔍 DETALHE
 router.get('/:id', obterAlerta);
 
+// ✏️ ATUALIZAR
 router.put(
   '/:id',
   requireAnyRole('SEGURANCA', 'POLICIA', 'ADMIN'),
@@ -54,4 +63,3 @@ router.put(
 );
 
 export default router;
-

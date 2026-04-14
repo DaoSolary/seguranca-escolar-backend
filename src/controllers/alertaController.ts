@@ -86,6 +86,7 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
     if (files && files.length > 0) {
       try {
         const uploads = await uploadMultipleFiles(files, 'evidencias');
+        console.log('📁 Uploads recebidos:', files);
 
         const evidencias = await Promise.all(
           uploads.map((upload) =>
@@ -93,7 +94,7 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
               data: {
                 alertaId: alerta.id,
                 tipo: upload.tipo.startsWith('image/') ? 'foto' : 'video',
-                url: upload.url,
+                url: `/uploads/evidencias/${upload.nomeArquivo}`,
                 nomeArquivo: upload.nomeArquivo,
                 tamanho: upload.tamanho,
               },
@@ -104,8 +105,12 @@ export const criarAlerta = async (req: AuthRequest, res: Response) => {
         // atualizar alerta com evidências
         (alerta as any).evidencias = evidencias;
       } catch (uploadError) {
-        console.error('Erro no upload de evidências:', uploadError);
-      }
+  console.error('Erro no upload de evidências:', uploadError);
+
+  return res.status(500).json({
+    message: 'Erro ao fazer upload das evidências',
+  });
+}
     }
 
     // 📡 SOCKET
@@ -569,7 +574,7 @@ export const uploadEvidencias = async (req: AuthRequest, res: Response) => {
           data: {
             alertaId: alerta.id,
             tipo: upload.tipo.startsWith('image/') ? 'foto' : 'video',
-            url: upload.url,
+            url: `/uploads/evidencias/${upload.nomeArquivo}`,
             nomeArquivo: upload.nomeArquivo,
             tamanho: upload.tamanho,
           },
