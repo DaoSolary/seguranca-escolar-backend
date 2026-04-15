@@ -33,14 +33,14 @@ console.log('UPLOAD DIR:', uploadPath);
 console.log('UPLOAD DIR EXISTS:', fs.existsSync(uploadPath)); // Confirma se a pasta existe no ambiente de produção
 
 // 🌍 Lista de origens permitidas
-const allowedOrigins: string[] = [];
+/*const allowedOrigins: string[] = [];
 
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
 // Desenvolvimento local
-allowedOrigins.push('http://localhost:5173');
+allowedOrigins.push('http://localhost:5173');*/
 
 // 🔐 Função CORS dinâmica (resolve problema de cookies)
 const allowedOrigins = [
